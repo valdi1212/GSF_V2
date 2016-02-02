@@ -1,6 +1,6 @@
-USE 1212962259_FreshAir_International;
+USE 1212962259_FreshAir_InternatiONal;
 
--- Functions
+-- FunctiONs
 
 DELIMITER $$
 DROP FUNCTION IF EXISTS profits $$
@@ -13,7 +13,7 @@ CREATE FUNCTION profits(flight_code INT(11))
 		INTO profit
 		FROM prices
 		JOIN passengers ON prices.priceID = passengers.priceID
-		JOIN bookings on passengers.bookingNumber = bookings.bookingNumber
+		JOIN bookings ON passengers.bookingNumber = bookings.bookingNumber
 		WHERE bookings.flightCode = flight_code;
 		
 		RETURN profit;
@@ -25,20 +25,30 @@ DROP FUNCTION IF EXISTS flight_booking_status $$
 CREATE FUNCTION flight_booking_status(flight_code INT(11), form INT(1))
 	RETURNS INT
 	BEGIN
+		DECLARE booked_seats INT;
 		DECLARE results INT;
 		
+		SELECT count(seatingID)
+		INTO booked_seats
+		FROM passengers
+		JOIN bookings ON passengers.bookingNumber = bookings.bookingNumber
+		WHERE bookings.flightCode = flight_code;
+
+		SELECT (booked_seats/maxNumberOfPassangers) * 100
+		INTO results
+		FROM flights
+		INNER JOIN aircrafts ON flights.aircraftID = aircrafts.aircraftID
+		WHERE flights.flightCode = flight_code;
+
 		IF (form = 0)
 		THEN
-			SELECT count(seatingID)
-			INTO results
-			FROM passengers
-			JOIN bookings ON passengers.bookingNumber = bookings.bookingNumber
-			WHERE bookings.flightCode = flight_code;
+			RETURN booked_seats;
+
+		ELSEIF (form = 1)
+		THEN
+			RETURN results;
 		END IF;
-		
-		--TODO: needs a second function that calculates percentage of booked seats
-		
-		RETURN results;
+
 	END $$
 DELIMITER ;
 
@@ -51,16 +61,15 @@ CREATE PROCEDURE list_free_windows
 		in flight_code INT(11)
 	)
 	BEGIN
-		SELECT aircraftseats.seatID, seatPlacement
-		FROM aircraftseats
-		LEFT JOIN passengers ON aircraftseats.seatID = passengers.seatID
-		LEFT JOIN bookings ON passengers.bookingNumber = bookings.bookingNumber
-		LEFT JOIN flights ON bookings.flightCode = flights.flightCode
+		SELECT aircraftseats.seatID, aircraftseats.seatPlacement
+		FROM bookings
+		INNER JOIN passengers ON bookings.bookingNumber = passengers.bookingNumber
+		RIGHT JOIN aircraftseats ON passengers.seatID = aircraftseats.seatID
+		INNER JOIN aircrafts ON aircraftseats.aircraftID = aircrafts.aircraftID
+		INNER JOIN flights ON aircrafts.aircraftID = flights.aircraftID
 		WHERE seatPlacement = 'w'
-		AND bookings.bookingNumber IS NULL
+		AND passengers.seatingID IS NULL
 		AND flights.flightCode = flight_code;
-		--TODO: MAKE IT WORK! join through aircrafts to flights instead of booking?
-		-- since we want seats that haven't been booked?
 	END $$
 DELIMITER ;
 
