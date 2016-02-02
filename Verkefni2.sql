@@ -53,12 +53,14 @@ CREATE PROCEDURE list_free_windows
 	BEGIN
 		SELECT aircraftseats.seatID, seatPlacement
 		FROM aircraftseats
-		JOIN passengers ON aircraftseats.seatID = passengers.seatID
-		JOIN bookings ON passengers.bookingNumber = bookings.bookingNumber
-		JOIN flights ON bookings.flightCode = flights.flightCode
+		LEFT JOIN passengers ON aircraftseats.seatID = passengers.seatID
+		LEFT JOIN bookings ON passengers.bookingNumber = bookings.bookingNumber
+		LEFT JOIN flights ON bookings.flightCode = flights.flightCode
 		WHERE seatPlacement = 'w'
+		AND bookings.bookingNumber IS NULL
 		AND flights.flightCode = flight_code;
-		--TODO: make it actually list free windows rather than all of them
+		--TODO: MAKE IT WORK! join through aircrafts to flights instead of booking?
+		-- since we want seats that haven't been booked?
 	END $$
 DELIMITER ;
 
