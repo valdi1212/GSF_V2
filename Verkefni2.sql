@@ -169,6 +169,9 @@ CREATE PROCEDURE TwoSideBySide(flight_number CHAR(5), flight_date DATE)
                                                                               WHERE seatID = second_seat))
           THEN
             SET done = TRUE;
+          ELSE
+          	SET first_seat = NULL;
+          	SET second_seat = NULL;
           END IF;
       -- ============================== -- oo0oo -- ================================
       END IF;
@@ -182,8 +185,8 @@ CREATE PROCEDURE TwoSideBySide(flight_number CHAR(5), flight_date DATE)
     CLOSE vacantSeatsCursor;
 
     SELECT
-      first_seat,
-      second_seat;
+      first_seat as'First seat',
+      second_seat as 'Second seat';
   END $$
 DELIMITER ;
 
