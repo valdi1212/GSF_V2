@@ -167,8 +167,8 @@ CREATE PROCEDURE TwoSideBySide(flight_number CHAR(5), flight_date DATE)
           THEN
             SET done = TRUE;
           ELSE
-          	SET first_seat = NULL;
-          	SET second_seat = NULL;
+            SET first_seat = NULL;
+            SET second_seat = NULL;
           END IF;
       -- ============================== -- oo0oo -- ================================
       END IF;
@@ -182,8 +182,8 @@ CREATE PROCEDURE TwoSideBySide(flight_number CHAR(5), flight_date DATE)
     CLOSE vacantSeatsCursor;
 
     SELECT
-      first_seat as'First seat',
-      second_seat as 'Second seat';
+      first_seat  AS 'First seat',
+      second_seat AS 'Second seat';
   END $$
 DELIMITER ;
 
@@ -192,28 +192,71 @@ DELIMITER ;
 -- User has to insert quite a few parameters
 
 DELIMITER $$
-	DROP PROCEDURE IF EXISTS BookFlight $$
-	CREATE PROCEDURE BookFlight(flight_code INT(11), flight_date DATE, card_issued_by VARCHAR(35), passengers_array TEXT)
-	BEGIN
-		DECLARE outerPosition INT;
-		DECLARE workingArray TEXT;
-		DECLARE currentString VARCHAR(255);
+DROP PROCEDURE IF EXISTS BookFlight $$
+CREATE PROCEDURE BookFlight(flight_code       INT(11), flight_date DATETIME, card_issued_by VARCHAR(35),
+                            card_holders_name VARCHAR(55), passengers_array TEXT)
+  BEGIN
+    DECLARE outerPosition INT;
+    DECLARE innerPosition INT;
+    DECLARE workingArray TEXT;
+    DECLARE currentPassanger VARCHAR(255);
 
-		SET workingArray = passengers_array
-		SET currentPosition = 1;
+    DECLARE booking_number INT(11);
+    DECLARE price_id INT(11);
+    DECLARE seat_id INT(11);
+    DECLARE person_id VARCHAR(35);
+    DECLARE person_name VARCHAR(75);
 
+    SET workingArray = passengers_array;
+    SET outerPosition = 1;
+    SET innerPosition = 1;
 
-		-- TODO: create another fake array loop inside of this one, making it possible to pass in
-		-- arrays within another array
-		WHILE CHAR_LENGTH(workingArray) > 0 AND currentPosition > 0 DO
-			SET currentPosition = INSTR(workingArray, '|');
-			IF currentPosition = 0 THEN
-				SET currentCourse = workingArray;
-			ELSE
-				SET currentCourse = LEFT(workingArray, currentCourse - 1);
-			END IF;
+    INSERT INTO bookings (flightCode, timeOfBooking, cardIssuedBy, cardholdersName)
+    VALUES (flight_code, flight_date, card_issued_by, card_holders_name);
 
-			SET workingArray = SUBSTRING(workingArray, currentPosition + 1);
-		END WHILE;
-	END $$
+    SELECT bookingNumber
+    FROM bookings
+    WHERE flightCode = flight_code AND timeOfBooking = flight_date AND cardIssuedBy = card_issued_by AND
+          cardholdersName = card_holders_name
+    INTO booking_number;
+
+    -- TODO: create another fake array loop inside of this one, making it possible to pass in
+    -- arrays within another array
+    WHILE CHAR_LENGTH(workingArray) > 0 AND outerPosition > 0 DO
+      SET outerPosition = INSTR(workingArray, '|');
+      IF outerPosition = 0
+      THEN
+        SET currentPassanger = workingArray;
+      ELSE
+        SET currentPassanger = LEFT(workingArray, currentPassanger - 1);
+      END IF;
+
+      IF TRIM(workingArray) != ''
+      THEN
+        SET innerPosition = INSTR(currentPassanger, ',');
+        SET person_name = LEFT(currentPassanger, innerPosition - 1);
+        SET currentPassanger = SUBSTRING(currentPassanger, innerPosition + 1);
+
+        SET innerPosition = INSTR(currentPassanger, ',');
+        SET person_id = LEFT(currentPassanger, innerPosition - 1);
+        SET currentPassanger = SUBSTRING(currentPassanger, innerPosition + 1);
+
+        SET innerPosition = INSTR(currentPassanger, ',');
+        SET seat_id = LEFT(currentPassanger, innerPosition - 1);
+        SET currentPassanger = SUBSTRING(currentPassanger, innerPosition + 1);
+
+        SET price_id = currentPassanger;
+
+        INSERT INTO passengers (personName, personID, seatID, priceID, bookingNumber)
+        VALUES (person_name, person_id, seat_id, price_id, booking_number);
+      END IF;
+
+      SET workingArray = SUBSTRING(workingArray, outerPosition + 1);
+    END WHILE;
+  END $$
 DELIMITER ;
+
+CALL BookFlight(69, '2016-02-11 18:40:22', 'VISA', 'Valdimar Gunnarsson', 'Sylvía Ólafsdóttir,IS454625,152,4');
+SELECT *
+FROM passengers
+WHERE seatID = 152
