@@ -109,9 +109,6 @@ CREATE PROCEDURE list_free_windows
 DELIMITER ;
 
 
--- TODO: write SP that finds two empty seats side by side in a specified flight
-
-
 DELIMITER $$
 DROP PROCEDURE IF EXISTS TwoSideBySide $$
 CREATE PROCEDURE TwoSideBySide(flight_number CHAR(5), flight_date DATE)
@@ -191,6 +188,32 @@ CREATE PROCEDURE TwoSideBySide(flight_number CHAR(5), flight_date DATE)
 DELIMITER ;
 
 
--- TODO: write SP that books a flight/shows booking for a flight?
--- very vague instructions. Should it insert into a row, or just show the information
--- based on some parameter the user puts in?
+-- TODO: write SP that books a flight
+-- User has to insert quite a few parameters
+
+DELIMITER $$
+	DROP PROCEDURE IF EXISTS BookFlight $$
+	CREATE PROCEDURE BookFlight(flight_code INT(11), flight_date DATE, card_issued_by VARCHAR(35), passengers_array TEXT)
+	BEGIN
+		DECLARE outerPosition INT;
+		DECLARE workingArray TEXT;
+		DECLARE currentString VARCHAR(255);
+
+		SET workingArray = passengers_array
+		SET currentPosition = 1;
+
+
+		-- TODO: create another fake array loop inside of this one, making it possible to pass in
+		-- arrays within another array
+		WHILE CHAR_LENGTH(workingArray) > 0 AND currentPosition > 0 DO
+			SET currentPosition = INSTR(workingArray, '|');
+			IF currentPosition = 0 THEN
+				SET currentCourse = workingArray;
+			ELSE
+				SET currentCourse = LEFT(workingArray, currentCourse - 1);
+			END IF;
+
+			SET workingArray = SUBSTRING(workingArray, currentPosition + 1);
+		END WHILE;
+	END $$
+DELIMITER ;
