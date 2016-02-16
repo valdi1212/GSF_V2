@@ -219,16 +219,14 @@ CREATE PROCEDURE BookFlight(flight_code       INT(11), flight_date DATETIME, car
     WHERE flightCode = flight_code AND timeOfBooking = flight_date AND cardIssuedBy = card_issued_by AND
           cardholdersName = card_holders_name
     INTO booking_number;
-
-    -- TODO: create another fake array loop inside of this one, making it possible to pass in
-    -- arrays within another array
+	
     WHILE CHAR_LENGTH(workingArray) > 0 AND outerPosition > 0 DO
       SET outerPosition = INSTR(workingArray, '|');
       IF outerPosition = 0
       THEN
         SET currentPassanger = workingArray;
       ELSE
-        SET currentPassanger = LEFT(workingArray, currentPassanger - 1);
+        SET currentPassanger = LEFT(workingArray, outerPosition - 1);
       END IF;
 
       IF TRIM(workingArray) != ''
@@ -256,7 +254,4 @@ CREATE PROCEDURE BookFlight(flight_code       INT(11), flight_date DATETIME, car
   END $$
 DELIMITER ;
 
-CALL BookFlight(69, '2016-02-11 18:40:22', 'VISA', 'Valdimar Gunnarsson', 'Sylvía Ólafsdóttir,IS454625,152,4');
-SELECT *
-FROM passengers
-WHERE seatID = 152
+-- CALL BookFlight(69, '2016-02-11 18:40:22', 'VISA', 'Valdimar Gunnarsson', 'Sylvía Ólafsdóttir,IS454625,152,4|Ólafur Andri Gunnarsson,IS223588,153,4');
